@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+sentence-transformers==2.2.2
+transformers==4.41.2
+huggingface_hub==0.7.0  # Pin to a version compatible with sentence-transformers 2.2.2
+faiss-cpu
+numpy
+pandas
+pydantic
