@@ -22,7 +22,7 @@ This project is a FastAPI-based API that searches for similar news articles base
    ```bash
    git clone <your-repo-url>  # If hosted on Git/HF
    cd GIVA
-2. **Build the docker Image** :
+2. **Build the docker Image** (this can take upto 20 minutes) :
    ```bash
    docker build -t giva-news-api .
 3. **Run the container** :
