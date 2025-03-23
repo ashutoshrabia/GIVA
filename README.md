@@ -13,7 +13,7 @@ This is a FastAPI-based API that searches for similar news articles based on a u
   - Faced multiple runtime errors during deployment on Hugging Face Spaces, including:
     - PermissionError: `[Errno 13] Permission denied`: '/.cache': The container user lacked write access to the default cache directory. Fixed by setting `HF_HOME=/app/cache` and ensuring the directory is writable with `chmod` 
       R 777 /app/cache.
-    - PermissionError: `[Errno 13] Permission denied`: '/app/cache/token': huggingface_hub couldn’t write a token file. Resolved by pre-downloading the model during the build and setting `HF_TOKEN=None` to skip token checks.
+    - PermissionError: `[Errno 13] Permission denied`: '/app/cache/token': huggingface_hub couldn’t write a token file. 
   
 
 ## Steps to Run Locally
