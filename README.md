@@ -32,8 +32,8 @@ This project is a FastAPI-based API that searches for similar news articles base
    - Open http://localhost:7860/ in your browser for the welcome page.
    - Use /search or /api/search endpoints
 5. **Stop the container** :
-   - Press ctrl + c
-  
+   - Press ctrl + c  
+## or if you have installed all requirements in your local , then simply run app.py
 ## Example API Requests & Responses
 
 ### 1. Welcome Page (GET /)
