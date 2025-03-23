@@ -87,6 +87,7 @@ This project is a FastAPI-based API that searches for similar news articles base
 - **Request**: Browse or curl with query:
   ```bash
   curl "http://localhost:7860/api/search?q=technology+news&top_k=3"
+```json
 {
     "results": [
         {
@@ -115,13 +116,15 @@ This project is a FastAPI-based API that searches for similar news articles base
         }
     ]
 }
-
+```
 ### 4. JSON API (POST /api/search)
 - **Request**: Browse or curl with query:
   ```bash
   curl -X POST "http://localhost:7860/api/search" \
   -H "Content-Type: application/json" \
   -d '{"query": "technology news", "top_k": 3}'
+  
+```json  
 {
     "results": [
         {
