@@ -3,14 +3,18 @@
 This is a FastAPI-based API that searches for similar news articles based on a user-provided query. It uses sentence embeddings from the `all-MiniLM-L6-v2` model (via `sentence-transformers`) and FAISS for efficient similarity search. 
 
 ## Approach
-- **Data**: The API uses a CSV file (`Articles.csv`) containing news articles with columns: `Article`, `Date`, `Heading`, and `NewsType`.
+- **Data**: The API uses a CSV file (`Articles.csv`) containing 2692 news articles with columns: `Article`, `Date`, `Heading`, and `NewsType`. This data is loaded into memory for embedding generation and can be imported into a Postgres database (e.g., Supabase) for persistent storage.
 - **Embedding**: Articles are converted to vector embeddings using `sentence-transformers` (`all-MiniLM-L6-v2`), which are indexed with FAISS for fast similarity search.
 - **API**: Built with FastAPI, it offers:
   - A web interface (`/search`) for HTML-based search.
   - JSON endpoints (`/api/search`) for programmatic access (GET and POST).
-- **Deployment**: Containerized with Docker and hosted on Hugging Face Spaces, ensuring portability and scalability.
-- **Challenges**: Resolved dependency conflicts (e.g., `huggingface_hub`, `transformers`, `sentence-transformers`) and runtime issues (e.g., model loading, CSV access) to ensure smooth deployment.
-
+- **Challenges**:
+  - Encountered an ImportError: cannot import name `cached_download` from `huggingface_hub` due to a version mismatch. `sentence-transformers==2.2.2` expects huggingface_hub versions with cached_download `(e.g., 0.10.1)`, but a newer version `(0.23.4)` was installed. Resolved by downgrading to `huggingface_hub==0.10.1` in `requirements.txt`.
+  - Faced multiple runtime errors during deployment on Hugging Face Spaces, including:
+    - PermissionError: `[Errno 13] Permission denied`: '/.cache': The container user lacked write access to the default cache directory. Fixed by setting `HF_HOME=/app/cache` and ensuring the directory is writable with `chmod` 
+      R 777 /app/cache.
+    - PermissionError: `[Errno 13] Permission denied`: '/app/cache/token': huggingface_hub couldn’t write a token file. Resolved by pre-downloading the model during the build and setting `HF_TOKEN=None` to skip token checks.
+  
 
 ## Steps to Run Locally
 ### Prerequisites
