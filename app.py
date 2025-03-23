@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 import numpy as np
 from sentence_transformers import SentenceTransformer
@@ -7,7 +7,13 @@ import pandas as pd
 from pydantic import BaseModel
 from typing import List, Dict
 import uvicorn
+import os
+import logging
 
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+os.environ["HF_HOME"] = "/app/cache"
 
 app = FastAPI(
     title="News Article Similarity Search API",
@@ -15,69 +21,89 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Defining a simple data model for our POST endpoint
 class SearchQuery(BaseModel):
-    query: str  
-    top_k: int = 5  
-
+    query: str
+    top_k: int = 5
 
 class DocumentStore:
     def __init__(self, csv_path: str = "Articles.csv"):
-        # Using a pre-trained model to turn text into vectors (embeddings)
-        self.model = SentenceTransformer('all-MiniLM-L6-v2')
+        self.model = None
         self.dimension = 384  
-        self.index = faiss.IndexFlatL2(self.dimension)  # FAISS index for fast similarity search
-        self.documents = []  
-        self.load_csv(csv_path)  
+        self.index = None
+        self.documents = []
+        self.csv_path = csv_path
+        self.load_csv()
 
-    def load_csv(self, csv_path: str):
-        # Reading the CSV file where our articles live
-        df = pd.read_csv(csv_path, encoding='latin1')  
-        # Making sure the CSV has the columns we need
+    def load_csv(self):
+        logger.info(f"Looking for the CSV at: {self.csv_path}")
+        if not os.path.exists(self.csv_path):
+            logger.error(f"Couldn’t find the CSV file at {self.csv_path}")
+            raise FileNotFoundError(f"CSV file not found at {self.csv_path}")
+
+        logger.info(f"Loading the CSV from {self.csv_path}")
+        df = pd.read_csv(self.csv_path, encoding='latin1')
+        logger.info(f"Found these columns in the CSV: {df.columns.tolist()}")
+
         required_columns = ['Article', 'Date', 'Heading', 'NewsType']
         if not all(col in df.columns for col in required_columns):
-            raise ValueError("Hey, the CSV needs Article, Date, Heading, and NewsType columns!")
-        
-      
+            logger.error(f"Missing some required columns. Found: {df.columns.tolist()}")
+            raise ValueError("CSV needs Article, Date, Heading, and NewsType columns!")
+
+        # Grabbing all the articles as a list of strings
         articles = df['Article'].astype(str).tolist()
-        # Converting articles to embeddings (vectors) so we can compare them later
-        embeddings = self.model.encode(articles, show_progress_bar=True) 
-        self.index.add(embeddings)  # Adding these vectors to our FAISS index for searching
-        
+        logger.info(f"Loaded {len(articles)} articles from the CSV")
+
+        # Loading the model and turning the articles into embeddings
+        logger.info("Loading the SentenceTransformer model...")
+        self.model = SentenceTransformer('all-MiniLM-L6-v2')
+        logger.info("Turning articles into embeddings...")
+        embeddings = self.model.encode(articles, show_progress_bar=True)
+
+        # Setting up FAISS to do fast similarity searches
+        self.index = faiss.IndexFlatL2(self.dimension)
+        self.index.add(embeddings)
+        logger.info(f"Added {len(embeddings)} embeddings to the FAISS index")
+
         for idx, row in df.iterrows():
             self.documents.append({
-                'id': idx,  
+                'id': idx,
                 'article': str(row['Article']),
                 'date': str(row['Date']),
                 'heading': str(row['Heading']),
                 'news_type': str(row['NewsType'])
             })
+        logger.info(f"Saved {len(self.documents)} documents for later")
 
     def search(self, query: str, top_k: int = 5) -> List[Dict]:
-        # Turning the user's query into a vector
+        # Making sure everything’s ready before we search
+        if not self.model or not self.index:
+            logger.error("Something’s wrong—DocumentStore isn’t set up right")
+            raise RuntimeError("DocumentStore isn’t ready. Missing model or index.")
+
+        logger.info(f"Searching for: {query}, returning top {top_k} results")
         query_embedding = self.model.encode([query])[0]
-        # Searching the FAISS index for the top_k closest vectors
+
         distances, indices = self.index.search(np.array([query_embedding]), top_k)
         results = []
-        # Looping through the results to build our response
+
         for idx, dist in zip(indices[0], distances[0]):
-            if idx != -1 and idx < len(self.documents):  
+            if idx != -1 and idx < len(self.documents):
                 doc = self.documents[idx]
-              
-                similarity = 1 - (dist / 2)  
+                similarity = 1 - (dist / 2) 
                 results.append({
                     'id': doc['id'],
                     'article': doc['article'],
                     'date': doc['date'],
                     'heading': doc['heading'],
                     'news_type': doc['news_type'],
-                    'similarity': float(similarity) 
+                    'similarity': float(similarity)
                 })
+        logger.info(f"Got {len(results)} results for the query: {query}")
         return results
 
-# Creating our document store 
 doc_store = DocumentStore()
 
+# Some basic CSS 
 def get_styles():
     return """
     <style>
@@ -95,7 +121,15 @@ def get_styles():
     </style>
     """
 
-#  homepage
+@app.on_event("startup")
+async def startup_event():
+    logger.info("Starting up the app...")
+    if not doc_store.documents:
+        logger.error("Uh oh, DocumentStore didn’t load any documents")
+        raise RuntimeError("DocumentStore didn’t load properly")
+    logger.info("App started up fine!")
+
+# The main page 
 @app.get("/", response_class=HTMLResponse)
 async def root():
     return f"""
@@ -140,32 +174,26 @@ async def search_form(request: Request, query: str = "", top_k: int = 5):
                 <p><a href="/search">New Search</a></p>
                 <ul>
     """
-    
     for result in results:
         html_content += f"""
             <li>
                 <strong>{result['heading']}</strong> ({result['date']}) - {result['news_type']}<br>
                 <em>Similarity: {result['similarity']:.2f}</em><br>
-                {result['article'][:200]}...  <!-- Cutting it short so it’s not overwhelming -->
+                {result['article'][:200]}...
             </li>
         """
     html_content += """</ul></div></body></html>"""
     return HTMLResponse(content=html_content)
 
-# The POST endpoint for programmatic API access
 @app.post("/api/search")
 async def search_documents(query: SearchQuery):
-    # Just grab the results and send them back as JSON
     results = doc_store.search(query=query.query, top_k=query.top_k)
     return {"results": results}
 
-# Added a GET endpoint to match the exact requirement
 @app.get("/api/search")
 async def search_documents_get(q: str, top_k: int = 5):
-   
     results = doc_store.search(query=q, top_k=top_k)
     return {"results": results}
 
-# Start the server when we run the file
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=7860)  
+    uvicorn.run(app, host="0.0.0.0", port=7860)
