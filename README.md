@@ -14,8 +14,7 @@ This is a FastAPI-based API that searches for similar news articles based on a u
     - PermissionError: `[Errno 13] Permission denied`: '/.cache': The container user lacked write access to the default cache directory. Fixed by setting `HF_HOME=/app/cache` and ensuring the directory is writable with `chmod` 
       R 777 /app/cache.
     - PermissionError: `[Errno 13] Permission denied`: '/app/cache/token': huggingface_hub couldn’t write a token file. 
-  
-
+  - Attempted deployment on Render, but hit an out-of-memory error because the app exceeded the free tier’s 512 MB RAM limit while loading the model and encoding articles.
 ## Steps to Run Locally
 ### Prerequisites
 - Docker installed ([Download](https://www.docker.com/get-started))
