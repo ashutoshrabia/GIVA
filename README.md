@@ -1,4 +1,4 @@
-# GIVA News Similarity API
+#News Similarity API
 
 This is a FastAPI-based API that searches for similar news articles based on a user-provided query. It uses sentence embeddings from the `all-MiniLM-L6-v2` model (via `sentence-transformers`) and FAISS for efficient similarity search. 
 
