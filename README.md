@@ -27,10 +27,10 @@ This is a FastAPI-based API that searches for similar news articles based on a u
    cd GIVA
 2. **Build the docker Image** (this can take upto 20 minutes) :
    ```bash
-   docker build -t giva-news-api .
+   docker build -t news-api .
 3. **Run the container** (this can take upto 5 minutes) :
    ```bash
-   docker run -p 7860:7860 giva-news-api
+   docker run -p 7860:7860 news-api
 4. **Access the API** :
    - Open http://localhost:7860/ in your browser for the welcome page.
    - Use /search or /api/search endpoints
