@@ -9,12 +9,21 @@ This is a FastAPI-based API that searches for similar news articles based on a u
   - A web interface (`/search`) for HTML-based search.
   - JSON endpoints (`/api/search`) for programmatic access (GET and POST).
 - **Challenges**:
-  - Encountered an ImportError: cannot import name `cached_download` from `huggingface_hub` due to a version mismatch. `sentence-transformers==2.2.2` expects huggingface_hub versions with cached_download `(e.g., 0.10.1)`, but a newer version `(0.23.4)` was installed. Resolved by downgrading to `huggingface_hub==0.10.1` in `requirements.txt`.
-  - Faced multiple runtime errors during deployment on Hugging Face Spaces, including:
-    - PermissionError: `[Errno 13] Permission denied`: '/.cache': The container user lacked write access to the default cache directory. Fixed by setting `HF_HOME=/app/cache` and ensuring the directory is writable with `chmod` 
-      R 777 /app/cache.
-    - PermissionError: `[Errno 13] Permission denied`: '/app/cache/token': huggingface_hub couldn’t write a token file. 
   - Attempted deployment on Render, but hit an out-of-memory error because the app exceeded the free tier’s 512 MB RAM limit while loading the model and encoding articles.
+
+- **Challenges Faced on AWS Deployment**:
+  - Cold start delays: Recomputing 2,692 embeddings on a small EC2 instance (t2.micro) caused startup to take 10–20 minutes before Uvicorn bound to the port.
+
+  - Out‑of‑Memory (OOM) kills: PyTorch, FAISS, and intermediate buffers exceeded the 1 GiB RAM limit, causing the container process to be terminated by the Linux OOM killer.
+
+  - Port-binding mismatches: Uvicorn’s internal default port (7860) did not initially match Docker’s host mapping, resulting in “connection refused” until both were aligned.
+
+  - Security Group configuration: EC2’s default firewall blocked port 7860; manual inbound rule updates were required to allow external traffic.
+
+  - Docker container lifecycle: Old containers binding the same port had to be removed (docker rm -f) before new builds could run, to avoid port‑in‑use errors.
+
+deployed on Streamlit : https://e3ygzgdzgxkpydoc9wmtvg.streamlit.app/
+  
 ## Steps to Run Locally
 ### Prerequisites
 - Docker installed ([Download](https://www.docker.com/get-started))
