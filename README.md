@@ -1,6 +1,6 @@
 # News Similarity Search
 
-This monorepo contains two separate projects for searching news article similarity:
+This monorepo contains two separate repos for searching news article similarity:
 
 1. **AWS**
 2. **Streamlit**
