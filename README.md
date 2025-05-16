@@ -116,4 +116,6 @@ The Streamlit folder contains an interactive app wrapping the same similarity se
   - `pandas`, `numpy`, `streamlit` (for Streamlit folder)
   - `fastapi`, `uvicorn` (for AWS folder)
 
----
+## 📜 License
+
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
